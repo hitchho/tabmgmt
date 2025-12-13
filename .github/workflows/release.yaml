@@ -45,5 +45,5 @@ jobs:
 
       - name: Publish to Chrome Web Store
         run: |
-          chrome-webstore-upload-cli upload --source manage-tabs-by-domain-v${{ env.VERSION }}.zip --extension-id YOUR_EXTENSION_ID --client-id ${{ secrets.CHROME_CLIENT_ID }} --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}
-          chrome-webstore-upload-cli publish --extension-id YOUR_EXTENSION_ID --client-id ${{ secrets.CHROME_CLIENT_ID }} --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}
+          chrome-webstore-upload-cli upload --source manage-tabs-by-domain-v${{ env.VERSION }}.zip --extension-id gobmdjdemnlkgfcgmhmmojgaebfediog --client-id ${{ secrets.CHROME_CLIENT_ID }} --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}
+          chrome-webstore-upload-cli publish --extension-id gobmdjdemnlkgfcgmhmmojgaebfediog --client-id ${{ secrets.CHROME_CLIENT_ID }} --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }}

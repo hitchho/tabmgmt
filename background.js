@@ -1,4 +1,4 @@
-// Helper functions
+// Domain helpers
 function getDomain(tab) {
   var url = new URL(tab.url);
   return url.origin + "/*";
@@ -6,35 +6,30 @@ function getDomain(tab) {
 
 function tabsMatchingDomain(domain, tabs) {
   var matching = [];
-
   for (var i = 0; i < tabs.length; i++) {
     var tab = tabs[i];
-
     if (getDomain(tab) === domain) {
       matching.push(tab);
     }
   }
-
   return matching;
 }
 
 function separateActiveFromInactive(tabs) {
   var inactiveTabs = [];
   var activeTab;
-
   for (var i = 0; i < tabs.length; i++) {
     var tab = tabs[i];
-
     if (tab.active) {
       activeTab = tab;
     } else {
       inactiveTabs.push(tab);
     }
   }
-
-  return {"activeTab": activeTab, "inactiveTabs": inactiveTabs};
+  return { activeTab: activeTab, inactiveTabs: inactiveTabs };
 }
 
+// Domain tab operations
 function closeTabs(tabs) {
   for (var i = 0; i < tabs.length; i++) {
     chrome.tabs.remove(tabs[i].id);
@@ -42,34 +37,25 @@ function closeTabs(tabs) {
 }
 
 function gatherTabs(tabs, activeTabIndex) {
-  // In order to maintain the original ordering of the tabs, tabs to the left 
-  // need to be handled separately since we need to know upfront how many 
-  // matching tabs are to the left of the active tab. Tabs to the right, 
-  // on the other hand, can just be added to the right of the active tab 
-  // as they are found.
   var leftTabs = [];
   var rightIdx = 1;
-  
+
   for (var i = 0; i < tabs.length; i++) {
     var tab = tabs[i];
-    
     if (tab.index < activeTabIndex) {
       leftTabs.push(tab.id);
     } else {
-      var moveProperties = {index: activeTabIndex + rightIdx};
-      chrome.tabs.move(tab.id, moveProperties);
+      chrome.tabs.move(tab.id, { index: activeTabIndex + rightIdx });
       rightIdx++;
     }
   }
 
   for (var i = leftTabs.length - 1, decrement = 1; i >= 0; i--, decrement++) {
-    var moveProperties = {index: activeTabIndex - decrement};
-    chrome.tabs.move(leftTabs[i], moveProperties);
+    chrome.tabs.move(leftTabs[i], { index: activeTabIndex - decrement });
   }
 }
 
 function gatherTabsAll(tabs) {
-  // For each unique domain, gather domains with the same domain around the left-most tab for that domain.
   var idx = tabs[0].index;
   var seenDomains = new Set();
 
@@ -79,37 +65,112 @@ function gatherTabsAll(tabs) {
 
     if (!seenDomains.has(domain)) {
       var matching = tabsMatchingDomain(domain, tabs);
-
       for (var j = 0; j < matching.length; j++) {
-        var matchingTab = matching[j];
-        var moveProperties = {index: idx};
-        chrome.tabs.move(matchingTab.id, moveProperties);
+        chrome.tabs.move(matching[j].id, { index: idx });
         idx += 1;
       }
-
       seenDomains.add(domain);
     }
   }
 }
 
-function handleCommand(cmd) {
-  chrome.tabs.query({currentWindow: true, pinned: false}, function(tabs) {
-    if (cmd === "gather-tabs-all") {
+// Tab movement operations
+async function moveTabsLeft(tabs, pinnedTabs, unpinnedTabs) {
+  for (const tab of tabs) {
+    const minIndex = tab.pinned ? 0 : pinnedTabs.length;
+    let newIndex = tab.index - 1;
+
+    if (newIndex < minIndex) {
+      newIndex = tab.pinned ? pinnedTabs.length - 1 : pinnedTabs.length + unpinnedTabs.length - 1;
+    }
+
+    await chrome.tabs.move(tab.id, { index: newIndex });
+  }
+}
+
+async function moveTabsRight(tabs, pinnedTabs, unpinnedTabs, totalTabs) {
+  for (let i = tabs.length - 1; i >= 0; i--) {
+    const tab = tabs[i];
+    const maxIndex = tab.pinned ? pinnedTabs.length - 1 : totalTabs - 1;
+    let newIndex = tab.index + 1;
+
+    if (newIndex > maxIndex) {
+      newIndex = tab.pinned ? 0 : pinnedTabs.length;
+    }
+
+    await chrome.tabs.move(tab.id, { index: newIndex });
+  }
+}
+
+async function moveTabsToStart(tabs, pinnedTabs) {
+  let insertIndex = tabs[0].pinned ? 0 : pinnedTabs.length;
+
+  for (const tab of tabs) {
+    await chrome.tabs.move(tab.id, { index: insertIndex });
+    insertIndex++;
+  }
+}
+
+async function moveTabsToEnd(tabs, pinnedTabs, totalTabs) {
+  for (const tab of tabs) {
+    const endIndex = tab.pinned ? pinnedTabs.length - 1 : totalTabs - 1;
+    await chrome.tabs.move(tab.id, { index: endIndex });
+  }
+}
+
+async function handleMoveCommand(cmd) {
+  const tabs = await chrome.tabs.query({ highlighted: true, currentWindow: true });
+  if (tabs.length === 0) return;
+
+  tabs.sort((a, b) => a.index - b.index);
+
+  const currentWindow = await chrome.windows.getCurrent();
+  const allTabs = await chrome.tabs.query({ windowId: currentWindow.id });
+
+  const pinnedTabs = allTabs.filter(t => t.pinned);
+  const unpinnedTabs = allTabs.filter(t => !t.pinned);
+
+  switch (cmd) {
+    case 'move-tab-left':
+      await moveTabsLeft(tabs, pinnedTabs, unpinnedTabs);
+      break;
+    case 'move-tab-right':
+      await moveTabsRight(tabs, pinnedTabs, unpinnedTabs, allTabs.length);
+      break;
+    case 'move-tab-start':
+      await moveTabsToStart(tabs, pinnedTabs);
+      break;
+    case 'move-tab-end':
+      await moveTabsToEnd(tabs, pinnedTabs, allTabs.length);
+      break;
+  }
+}
+
+function handleDomainCommand(cmd) {
+  chrome.tabs.query({ currentWindow: true, pinned: false }, function(tabs) {
+    if (cmd === 'gather-tabs-all') {
       gatherTabsAll(tabs);
     } else {
       var tabPartition = separateActiveFromInactive(tabs);
-      var activeTab = tabPartition["activeTab"];
-      var inactiveTabs = tabPartition["inactiveTabs"];
-
+      var activeTab = tabPartition.activeTab;
+      var inactiveTabs = tabPartition.inactiveTabs;
       var sameDomainTabs = tabsMatchingDomain(getDomain(activeTab), inactiveTabs);
 
-      if (cmd === "gather-tabs") {
+      if (cmd === 'gather-tabs') {
         gatherTabs(sameDomainTabs, activeTab.index);
-      } else if (cmd === "close-tabs") {
+      } else if (cmd === 'close-tabs') {
         closeTabs(sameDomainTabs);
       }
     }
   });
+}
+
+function handleCommand(cmd) {
+  if (cmd.startsWith('move-tab-')) {
+    handleMoveCommand(cmd);
+  } else {
+    handleDomainCommand(cmd);
+  }
 }
 
 // Event listeners
@@ -117,15 +178,11 @@ chrome.commands.onCommand.addListener(function(cmd) {
   handleCommand(cmd);
 });
 
-// In Manifest V3, we need to use the Chrome Runtime onMessage API
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   handleCommand(request.cmd);
-  // Must return true if you want to use sendResponse asynchronously
   return true;
 });
 
-// Service workers in Manifest V3 may be terminated when idle
-// Add an onInstalled listener to ensure the service worker activates properly
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Extension installed');
+  console.log('Manage Tabs extension installed');
 });

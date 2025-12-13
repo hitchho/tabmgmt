@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Tabs by Domain</title>
-  
+  <title>Manage Tabs</title>
+
   <style>
-    /* Modern CSS with gold/black color scheme - improved contrast */
     :root {
       --color-gold: #b8882d;
       --color-gold-hover: #d19c33;
       --color-gold-light: #d4af37;
-      --color-green-light: #37d44f;
       --color-dark: #111111;
       --color-dark-hover: #222222;
       --color-accent: #1f1f1f;
@@ -23,7 +21,6 @@
       --transition: 0.2s all ease;
     }
 
-    /* Base Styles */
     * {
       margin: 0;
       padding: 0;
@@ -36,10 +33,8 @@
       background-color: var(--color-bg-dark);
       color: var(--color-text-light);
       padding: 8px;
-      border-radius: 0;
     }
 
-    /* Layout */
     .container {
       display: flex;
       flex-direction: column;
@@ -47,7 +42,6 @@
       width: 100%;
     }
 
-    /* Buttons */
     .btn {
       display: flex;
       align-items: center;
@@ -126,10 +120,21 @@
     }
 
     .btn-gather-all::before {
-      background-color: var(--color-green-light);
+      background-color: #37d44f;
     }
 
-    /* Icons */
+    .btn-move {
+      background-color: var(--color-accent);
+    }
+
+    .btn-move:hover {
+      background-color: var(--color-accent-hover);
+    }
+
+    .btn-move::before {
+      background-color: #007aff;
+    }
+
     .icon {
       display: inline-flex;
       width: 14px;
@@ -140,7 +145,6 @@
       flex-shrink: 0;
     }
 
-    /* Keyboard Shortcut */
     .shortcut {
       margin-left: auto;
       font-size: 10px;
@@ -151,7 +155,6 @@
       flex-shrink: 0;
     }
 
-    /* Header */
     .header {
       display: flex;
       align-items: center;
@@ -167,7 +170,16 @@
       letter-spacing: 0.5px;
     }
 
-    /* Footer */
+    .section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.5;
+      margin: 8px 0 4px 0;
+      padding-top: 8px;
+      border-top: 1px solid var(--color-accent);
+    }
+
     .footer {
       margin-top: 6px;
       font-size: 9px;
@@ -176,39 +188,67 @@
       padding-top: 4px;
       border-top: 1px solid var(--color-accent);
     }
+
+    .move-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .move-row .btn {
+      flex: 1;
+      justify-content: center;
+      padding: 8px 4px;
+    }
+
+    .move-row .btn .icon {
+      margin: 0;
+    }
   </style>
-  
-  <!-- Defer loading popup.js until DOM is ready -->
+
   <script src="popup.js" defer></script>
 </head>
 <body>
   <div class="header">
-    <span class="logo">Domain Tabs</span>
+    <span class="logo">Manage Tabs</span>
   </div>
-  
+
   <div class="container">
     <button id="close-tabs" class="btn btn-close">
-      <span class="icon">✕</span>
-      <span>Close Tabs</span>
-      <span class="shortcut">⌘⇧X</span>
+      <span class="icon">X</span>
+      <span>Close Domain Tabs</span>
     </button>
-    
+
     <button id="gather-tabs" class="btn btn-gather">
-      <span class="icon">↔</span>
+      <span class="icon">~</span>
       <span>Gather Around</span>
-      <span class="shortcut">⌘⇧A</span>
     </button>
-    
+
     <button id="gather-tabs-all" class="btn btn-gather-all">
-      <span class="icon">⊕</span>
-      <span>Gather All</span>
-      <span class="shortcut">⌘⇧L</span>
+      <span class="icon">+</span>
+      <span>Gather All Domains</span>
     </button>
+
+    <div class="section-label">Move Tab</div>
+
+    <div class="move-row">
+      <button id="move-tab-start" class="btn btn-move" title="Move to start">
+        <span class="icon">|&lt;</span>
+      </button>
+      <button id="move-tab-left" class="btn btn-move" title="Move left">
+        <span class="icon">&lt;</span>
+      </button>
+      <button id="move-tab-right" class="btn btn-move" title="Move right">
+        <span class="icon">&gt;</span>
+      </button>
+      <button id="move-tab-end" class="btn btn-move" title="Move to end">
+        <span class="icon">&gt;|</span>
+      </button>
+    </div>
   </div>
-  
+
   <div class="footer">
-    Manage tabs with the same domain
+    Shortcuts: chrome://extensions/shortcuts
   </div>
-  
+
 </body>
 </html>

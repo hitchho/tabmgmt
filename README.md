@@ -1,51 +1,40 @@
-# Manage Tabs by Domain (manifestv3)
+# Manage Tabs by Domain
 
-A modern Chrome extension for managing same-domain tabs, built with Manifest V3 and UnoCSS.
-
-Tabs with the same domain as the active tab can be closed with CMD + Shift + X or gathered around the active tab with CMD + Shift + A. All same-domain tabs can be gathered with CMD + Shift + L. Alternatively, tabs can be managed by clicking on the extension's button and selecting Close, Gather, or Gather All.
-
-<p align="center">
-  <img src="https://lh3.googleusercontent.com/Q29f-0zD2oWxmIdlf2mZ-T5FqWzU88EasykSvNW4mpgxsqPDjb5ZYyGK6BzvRp7czp5Xc4Po2FJ3oZchX7zdn58_gQ" alt="Extension Screenshot" width="320" />
-</p>
+Chrome extension for managing tabs - close/gather same-domain tabs and move tabs with keyboard shortcuts.
 
 ## Features
 
-- ✨ Modern UI with UnoCSS atomic styling
-- 🌙 Native dark mode support
-- 🔄 Close all tabs from the same domain as your active tab
-- 📎 Gather same-domain tabs around your active tab
-- 🌐 Gather all tabs by domain across the entire window
-- ⌨️ Convenient keyboard shortcuts
-- 🎯 Lightweight with CDN-based dependencies
-- 🔍 Fully accessible with keyboard navigation
+- Close all tabs matching the active tab's domain
+- Gather same-domain tabs around the active tab
+- Gather all tabs by domain across the window
+- Move tabs left/right with keyboard shortcuts
+- Move tabs to start/end of tab bar
+- Works with pinned tabs
 
 ## Installation
 
-### From Chrome Web Store
-Coming soon!
+### Chrome Web Store
+https://chromewebstore.google.com/detail/manage-tabs-by-domain-mv3/gobmdjdemnlkgfcgmhmmojgaebfediog
 
-### Manual Installation
-1. Download or clone this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" using the toggle switch in the top-right corner
+### Manual
+1. Clone this repository
+2. Open `chrome://extensions/`
+3. Enable "Developer mode"
 4. Click "Load unpacked" and select the extension directory
-5. The extension is now installed and ready to use
 
 ## Keyboard Shortcuts
 
-- `Command+Shift+X` (Mac) / `Ctrl+Shift+X` (Windows/Linux): Close same-domain tabs
-- `Command+Shift+A` (Mac) / `Ctrl+Shift+A` (Windows/Linux): Gather same-domain tabs around active tab
-- `Command+Shift+L` (Mac) / `Ctrl+Shift+L` (Windows/Linux): Gather all same-domain tabs
+| Action | Mac | Windows/Linux |
+|--------|-----|---------------|
+| Close same-domain tabs | Cmd+Shift+X | Ctrl+Shift+X |
+| Gather around active | Cmd+Shift+A | Ctrl+Shift+A |
+| Gather all by domain | Cmd+Shift+L | Ctrl+Shift+L |
+| Move tab left | Ctrl+Cmd+Left | Alt+Shift+Left |
+| Move tab right | Ctrl+Cmd+Right | Alt+Shift+Right |
+| Move tab to start | Ctrl+Cmd+Up | Alt+Shift+Up |
+| Move tab to end | Ctrl+Cmd+Down | Alt+Shift+Down |
 
-You can customize these shortcuts at `chrome://extensions/shortcuts`
-
-## Technical Details
-
-- Built with Manifest V3
-- Styled with UnoCSS (Atomic CSS utilities)
-- Includes Carbon icons via UnoCSS Icons preset
-- Service worker background script for improved performance
-- Responsive and accessible design
+Customize shortcuts at `chrome://extensions/shortcuts`
 
 ## Build
 
@@ -55,4 +44,4 @@ make build version=x.x.x
 
 ## License
 
-MIT Licensed - see LICENSE file for details
+MIT

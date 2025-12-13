@@ -1,8 +1,8 @@
 {
-  "name": "Manage Tabs by Domain (MV3)",
-  "short_name": "Manage Tabs (MV3)",
-  "description": "Close and gather same-domain tabs.",
-  "version": "0.0.7",
+  "name": "Manage Tabs by Domain",
+  "short_name": "Manage Tabs",
+  "description": "Close/gather same-domain tabs and move tabs with keyboard shortcuts.",
+  "version": "0.1.0",
   "manifest_version": 3,
   "permissions": ["tabs"],
   "background": {
@@ -10,26 +10,42 @@
     "type": "module"
   },
   "commands": {
-    "gather-tabs": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+A",
-        "mac": "Command+Shift+A"
-      },
-      "description": "Gather same-domain tabs around active tab."
-    },
     "close-tabs": {
       "suggested_key": {
         "default": "Ctrl+Shift+X",
         "mac": "Command+Shift+X"
       },
-      "description": "Close same-domain tabs as active tab."
+      "description": "Close same-domain tabs"
+    },
+    "gather-tabs": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A",
+        "mac": "Command+Shift+A"
+      },
+      "description": "Gather same-domain tabs around active tab"
+    },
+    "move-tab-left": {
+      "suggested_key": {
+        "default": "Alt+Shift+Left",
+        "mac": "Ctrl+Command+Left"
+      },
+      "description": "Move tab left"
+    },
+    "move-tab-right": {
+      "suggested_key": {
+        "default": "Alt+Shift+Right",
+        "mac": "Ctrl+Command+Right"
+      },
+      "description": "Move tab right"
     },
     "gather-tabs-all": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+L",
-        "mac": "Command+Shift+L"
-      },
-      "description": "Gather all same-domain tabs."
+      "description": "Gather all tabs by domain"
+    },
+    "move-tab-start": {
+      "description": "Move tab to start"
+    },
+    "move-tab-end": {
+      "description": "Move tab to end"
     }
   },
   "action": {
