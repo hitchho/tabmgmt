@@ -1,4 +1,4 @@
-# Manage Tabs by Domain
+# tabmgmt
 
 Chrome extension for managing tabs - close/gather same-domain tabs and move tabs with keyboard shortcuts.
 

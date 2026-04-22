@@ -1,8 +1,8 @@
 {
-  "name": "Manage Tabs by Domain",
-  "short_name": "Manage Tabs",
+  "name": "tabmgmt",
+  "short_name": "tabmgmt",
   "description": "Close/gather same-domain tabs and move tabs with keyboard shortcuts.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "manifest_version": 3,
   "permissions": ["tabs"],
   "background": {

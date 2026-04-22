@@ -6,7 +6,7 @@ VERSION := $(shell jq -r '.version' manifest.json)
 # Build the extension into a ZIP file
 build:
 	@echo "Building extension version $(VERSION) from manifest.json..."
-	zip -r manage-tabs-by-domain-v$(VERSION).zip \
+	zip -r tabmgmt-v$(VERSION).zip \
 		manifest.json \
 		background.js \
 		popup.html \
@@ -18,7 +18,7 @@ build:
 # Build with a specific version (overrides manifest version)
 build-version:
 	@echo "Building extension version $(version)..."
-	zip -r manage-tabs-by-domain-v$(version).zip \
+	zip -r tabmgmt-v$(version).zip \
 		manifest.json \
 		background.js \
 		popup.html \

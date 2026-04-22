@@ -22,9 +22,6 @@ function handleButtonClick(e) {
   // Send message to background service worker
   chrome.runtime.sendMessage({ cmd: commandId })
     .catch(err => console.error('Error sending command:', err));
-  
-  // Close the popup after a slight delay for animation
-  setTimeout(() => window.close(), 150);
 }
 
 /**
@@ -53,6 +50,15 @@ function handleKeydown(e) {
 }
 
 /**
+ * Open the Chrome extensions shortcuts page
+ */
+function openShortcuts(e) {
+  e.preventDefault();
+  chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+  window.close();
+}
+
+/**
  * Initialize the popup
  */
 function initPopup() {
@@ -60,9 +66,12 @@ function initPopup() {
   document.querySelectorAll('button').forEach(button => {
     button.addEventListener('click', handleButtonClick);
   });
-  
+
   // Add keyboard navigation support
   document.addEventListener('keydown', handleKeydown);
+
+  // Add shortcuts link handler
+  document.getElementById('open-shortcuts').addEventListener('click', openShortcuts);
 }
 
 // Initialize popup when DOM is loaded
