@@ -2,7 +2,7 @@
 
 **Published by: Rotko Networks OÜ**
 
-**Last Updated: April 20, 2025**
+**Last Updated: September 27, 2026**
 
 ## Introduction
 
@@ -10,22 +10,36 @@ This Privacy Policy describes how the "Manage Tabs by Domain (MV3)" Chrome exten
 
 ## Data Collection and Usage
 
-**The Extension does not collect, transmit, store, or process any user data whatsoever.**
+**The Extension does not collect, transmit, or share any user data.** It keeps no persistent record of the tabs you manage; the only information it holds is the session-scoped undo record described below, which never leaves your device.
 
 Specifically:
 
 - We do not collect any personal information
 - We do not track your browsing activity
-- We do not store any information about the tabs you manage
 - We do not use cookies or other tracking technologies
 - We do not transmit any data to external servers
 - We do not use analytics services
+- We do not persist any information about the tabs you manage beyond the current browser session (see "Undo data" below)
+
+## Undo data
+
+To support the "Undo last close" feature, the Extension keeps a short-lived,
+in-memory record of the tabs it just closed (their URL, position, and pinned
+state) using `chrome.storage.session`.
+
+- This record never leaves your device and is never transmitted anywhere.
+- It is scoped to the current browser session and is cleared when the browser
+  is closed.
+- It is overwritten by the next close operation.
+- It can be cleared at any time by using the undo action, which deletes the
+  record from session storage.
 
 ## Required Permissions
 
-The Extension requires the following permission to function:
+The Extension requires the following permissions to function:
 
 - `tabs`: This permission is necessary to access and manage your browser tabs. This permission allows the Extension to read the URL of your tabs, close tabs, and reorder tabs based on domain. The Extension processes this information entirely within your browser and does not transmit any of this information elsewhere.
+- `storage`: This permission is used solely to hold the session-scoped undo record described above. No data is stored beyond the current browser session and none of it is transmitted off your device.
 
 ## Third-Party Services
 

@@ -1,0 +1,9 @@
+{
+  "name": "tabmgmt",
+  "private": true,
+  "description": "Dev harness for the tabmgmt extension (unit tests only).",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

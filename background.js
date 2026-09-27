@@ -1,188 +1,196 @@
-// Domain helpers
-function getDomain(tab) {
-  var url = new URL(tab.url);
-  return url.origin + "/*";
+/**
+ * Service worker: chrome.* side of tabmgmt.
+ *
+ * All ordering decisions live in ./domains.js (pure, tested). This file only
+ * reads window state, applies the computed order, and handles the close/undo
+ * bookkeeping.
+ */
+
+import {
+  computeMoves,
+  gatherAllOrder,
+  gatherAroundOrder,
+  idsByIndex,
+  moveOrder,
+  tabDomain,
+} from './domains.js';
+
+const UNDO_KEY = 'lastClosed';
+const MAX_UNDO = 25;
+
+/** @returns {Promise<chrome.tabs.Tab[]>} every tab in the current window */
+function currentWindowTabs() {
+  return chrome.tabs.query({ currentWindow: true });
 }
 
-function tabsMatchingDomain(domain, tabs) {
-  var matching = [];
-  for (var i = 0; i < tabs.length; i++) {
-    var tab = tabs[i];
-    if (getDomain(tab) === domain) {
-      matching.push(tab);
-    }
-  }
-  return matching;
-}
-
-function separateActiveFromInactive(tabs) {
-  var inactiveTabs = [];
-  var activeTab;
-  for (var i = 0; i < tabs.length; i++) {
-    var tab = tabs[i];
-    if (tab.active) {
-      activeTab = tab;
-    } else {
-      inactiveTabs.push(tab);
-    }
-  }
-  return { activeTab: activeTab, inactiveTabs: inactiveTabs };
-}
-
-// Domain tab operations
-function closeTabs(tabs) {
-  for (var i = 0; i < tabs.length; i++) {
-    chrome.tabs.remove(tabs[i].id);
-  }
-}
-
-function gatherTabs(tabs, activeTabIndex) {
-  var leftTabs = [];
-  var rightIdx = 1;
-
-  for (var i = 0; i < tabs.length; i++) {
-    var tab = tabs[i];
-    if (tab.index < activeTabIndex) {
-      leftTabs.push(tab.id);
-    } else {
-      chrome.tabs.move(tab.id, { index: activeTabIndex + rightIdx });
-      rightIdx++;
-    }
-  }
-
-  for (var i = leftTabs.length - 1, decrement = 1; i >= 0; i--, decrement++) {
-    chrome.tabs.move(leftTabs[i], { index: activeTabIndex - decrement });
-  }
-}
-
-function gatherTabsAll(tabs) {
-  var idx = tabs[0].index;
-  var seenDomains = new Set();
-
-  for (var i = 0; i < tabs.length; i++) {
-    var tab = tabs[i];
-    var domain = getDomain(tab);
-
-    if (!seenDomains.has(domain)) {
-      var matching = tabsMatchingDomain(domain, tabs);
-      for (var j = 0; j < matching.length; j++) {
-        chrome.tabs.move(matching[j].id, { index: idx });
-        idx += 1;
-      }
-      seenDomains.add(domain);
+/**
+ * Apply a computed target order with the minimum number of chrome.tabs.move
+ * calls. Failures (tab closed mid-flight) are logged and skipped so one stale
+ * id cannot abort the whole rearrangement.
+ *
+ * @param {chrome.tabs.Tab[]} tabs
+ * @param {number[]} targetIds
+ */
+async function applyOrder(tabs, targetIds) {
+  const moves = computeMoves(idsByIndex(tabs), targetIds);
+  for (const { id, index } of moves) {
+    try {
+      await chrome.tabs.move(id, { index });
+    } catch (err) {
+      console.warn('tabmgmt: move failed', { id, index }, err);
     }
   }
 }
 
-// Tab movement operations
-async function moveTabsLeft(tabs, pinnedTabs, unpinnedTabs) {
-  for (const tab of tabs) {
-    const minIndex = tab.pinned ? 0 : pinnedTabs.length;
-    let newIndex = tab.index - 1;
-
-    if (newIndex < minIndex) {
-      newIndex = tab.pinned ? pinnedTabs.length - 1 : pinnedTabs.length + unpinnedTabs.length - 1;
-    }
-
-    await chrome.tabs.move(tab.id, { index: newIndex });
-  }
+/** @returns {chrome.tabs.Tab|undefined} */
+function activeTab(tabs) {
+  return tabs.find((tab) => tab.active);
 }
 
-async function moveTabsRight(tabs, pinnedTabs, unpinnedTabs, totalTabs) {
-  for (let i = tabs.length - 1; i >= 0; i--) {
-    const tab = tabs[i];
-    const maxIndex = tab.pinned ? pinnedTabs.length - 1 : totalTabs - 1;
-    let newIndex = tab.index + 1;
+/**
+ * Close every non-active tab sharing the active tab's domain.
+ *
+ * @returns {Promise<{closed: number, domain: string|null, reason?: string}>}
+ */
+async function closeDomainTabs() {
+  const tabs = await currentWindowTabs();
+  const active = activeTab(tabs);
+  const domain = tabDomain(active);
+  if (!active || !domain) return { closed: 0, domain: null, reason: 'unsupported-url' };
 
-    if (newIndex > maxIndex) {
-      newIndex = tab.pinned ? 0 : pinnedTabs.length;
-    }
+  const victims = tabs.filter((tab) => !tab.active && tabDomain(tab) === domain);
+  if (victims.length === 0) return { closed: 0, domain };
 
-    await chrome.tabs.move(tab.id, { index: newIndex });
+  await rememberClosed(victims);
+  try {
+    await chrome.tabs.remove(victims.map((tab) => tab.id));
+  } catch (err) {
+    console.warn('tabmgmt: close failed', err);
   }
+  return { closed: victims.length, domain };
 }
 
-async function moveTabsToStart(tabs, pinnedTabs) {
-  let insertIndex = tabs[0].pinned ? 0 : pinnedTabs.length;
-
-  for (const tab of tabs) {
-    await chrome.tabs.move(tab.id, { index: insertIndex });
-    insertIndex++;
-  }
+/**
+ * Bring a same-domain group together. `all` groups the whole window by domain.
+ *
+ * @param {boolean} all
+ */
+async function gatherTabs(all) {
+  const tabs = await currentWindowTabs();
+  const active = activeTab(tabs);
+  const target = all
+    ? gatherAllOrder(tabs)
+    : active
+      ? gatherAroundOrder(tabs, active.id)
+      : idsByIndex(tabs);
+  await applyOrder(tabs, target);
 }
 
-async function moveTabsToEnd(tabs, pinnedTabs, totalTabs) {
-  for (const tab of tabs) {
-    const endIndex = tab.pinned ? pinnedTabs.length - 1 : totalTabs - 1;
-    await chrome.tabs.move(tab.id, { index: endIndex });
-  }
+/**
+ * Move the highlighted tab(s) one step.
+ *
+ * @param {'left'|'right'|'start'|'end'} direction
+ */
+async function moveTabs(direction) {
+  const tabs = await currentWindowTabs();
+  const selected = tabs.filter((tab) => tab.highlighted || tab.active).map((tab) => tab.id);
+  await applyOrder(tabs, moveOrder(tabs, selected, direction));
 }
 
-async function handleMoveCommand(cmd) {
-  const tabs = await chrome.tabs.query({ highlighted: true, currentWindow: true });
-  if (tabs.length === 0) return;
-
-  tabs.sort((a, b) => a.index - b.index);
-
-  const currentWindow = await chrome.windows.getCurrent();
-  const allTabs = await chrome.tabs.query({ windowId: currentWindow.id });
-
-  const pinnedTabs = allTabs.filter(t => t.pinned);
-  const unpinnedTabs = allTabs.filter(t => !t.pinned);
-
-  switch (cmd) {
-    case 'move-tab-left':
-      await moveTabsLeft(tabs, pinnedTabs, unpinnedTabs);
-      break;
-    case 'move-tab-right':
-      await moveTabsRight(tabs, pinnedTabs, unpinnedTabs, allTabs.length);
-      break;
-    case 'move-tab-start':
-      await moveTabsToStart(tabs, pinnedTabs);
-      break;
-    case 'move-tab-end':
-      await moveTabsToEnd(tabs, pinnedTabs, allTabs.length);
-      break;
-  }
+/**
+ * Persist the most recent close batch so the popup can offer an undo.
+ *
+ * @param {chrome.tabs.Tab[]} tabs
+ */
+async function rememberClosed(tabs) {
+  const records = tabs
+    .filter((tab) => tabDomain(tab)) // non-web URLs cannot be recreated
+    .slice(0, MAX_UNDO)
+    .map((tab) => ({
+      url: tab.url,
+      pinned: Boolean(tab.pinned),
+      index: tab.index,
+      windowId: tab.windowId,
+    }));
+  await chrome.storage.session.set({ [UNDO_KEY]: records });
 }
 
-function handleDomainCommand(cmd) {
-  chrome.tabs.query({ currentWindow: true, pinned: false }, function(tabs) {
-    if (cmd === 'gather-tabs-all') {
-      gatherTabsAll(tabs);
-    } else {
-      var tabPartition = separateActiveFromInactive(tabs);
-      var activeTab = tabPartition.activeTab;
-      var inactiveTabs = tabPartition.inactiveTabs;
-      var sameDomainTabs = tabsMatchingDomain(getDomain(activeTab), inactiveTabs);
+/**
+ * Reopen the tabs remembered by the last close.
+ *
+ * @returns {Promise<{restored: number, attempted: number}>}
+ */
+async function undoClose() {
+  const { [UNDO_KEY]: records = [] } = await chrome.storage.session.get(UNDO_KEY);
+  if (!Array.isArray(records) || records.length === 0) return { restored: 0, attempted: 0 };
 
-      if (cmd === 'gather-tabs') {
-        gatherTabs(sameDomainTabs, activeTab.index);
-      } else if (cmd === 'close-tabs') {
-        closeTabs(sameDomainTabs);
+  await chrome.storage.session.remove(UNDO_KEY);
+
+  let restored = 0;
+  for (const record of records) {
+    const base = { url: record.url, index: record.index, pinned: record.pinned, active: false };
+    try {
+      await chrome.tabs.create({ ...base, windowId: record.windowId });
+      restored++;
+    } catch {
+      // Original window is gone; fall back to the current one.
+      try {
+        await chrome.tabs.create(base);
+        restored++;
+      } catch (err) {
+        console.warn('tabmgmt: undo failed', record.url, err);
       }
     }
-  });
+  }
+  return { restored, attempted: records.length };
 }
 
-function handleCommand(cmd) {
-  if (cmd.startsWith('move-tab-')) {
-    handleMoveCommand(cmd);
-  } else {
-    handleDomainCommand(cmd);
+const MOVE_COMMANDS = {
+  'move-tab-left': 'left',
+  'move-tab-right': 'right',
+  'move-tab-start': 'start',
+  'move-tab-end': 'end',
+};
+
+const DOMAIN_COMMANDS = {
+  'close-tabs': closeDomainTabs,
+  'gather-tabs': () => gatherTabs(false),
+  'gather-tabs-all': () => gatherTabs(true),
+};
+
+/**
+ * @param {string} cmd
+ * @returns {Promise<{ok: boolean, [key: string]: unknown}>}
+ */
+async function handleCommand(cmd) {
+  try {
+    if (Object.hasOwn(MOVE_COMMANDS, cmd)) {
+      await moveTabs(MOVE_COMMANDS[cmd]);
+      return { ok: true };
+    }
+    if (Object.hasOwn(DOMAIN_COMMANDS, cmd)) {
+      return { ok: true, ...(await DOMAIN_COMMANDS[cmd]()) };
+    }
+    if (cmd === 'undo-close') {
+      return { ok: true, ...(await undoClose()) };
+    }
+    return { ok: false, error: `unknown command: ${cmd}` };
+  } catch (err) {
+    console.error('tabmgmt: command failed', cmd, err);
+    return { ok: false, error: String(err?.message ?? err) };
   }
 }
 
-// Event listeners
-chrome.commands.onCommand.addListener(function(cmd) {
-  handleCommand(cmd);
+chrome.commands.onCommand.addListener((cmd) => {
+  void handleCommand(cmd);
 });
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  handleCommand(request.cmd);
-  return true;
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (!request || typeof request.cmd !== 'string') return false;
+  handleCommand(request.cmd).then(sendResponse);
+  return true; // keep the channel open for the async reply
 });
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('Manage Tabs extension installed');
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log(`tabmgmt: ${details.reason}`);
 });

@@ -2,9 +2,12 @@
   "name": "tabmgmt",
   "short_name": "tabmgmt",
   "description": "Close/gather same-domain tabs and move tabs with keyboard shortcuts.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "manifest_version": 3,
-  "permissions": ["tabs"],
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -24,6 +27,9 @@
       },
       "description": "Gather same-domain tabs around active tab"
     },
+    "gather-tabs-all": {
+      "description": "Gather all tabs by domain"
+    },
     "move-tab-left": {
       "suggested_key": {
         "default": "Alt+Shift+Left",
@@ -38,14 +44,14 @@
       },
       "description": "Move tab right"
     },
-    "gather-tabs-all": {
-      "description": "Gather all tabs by domain"
-    },
     "move-tab-start": {
       "description": "Move tab to start"
     },
     "move-tab-end": {
       "description": "Move tab to end"
+    },
+    "undo-close": {
+      "description": "Undo last domain-tab close"
     }
   },
   "action": {

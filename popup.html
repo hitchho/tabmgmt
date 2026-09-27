@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Tabs</title>
+  <title>tabmgmt</title>
 
   <style>
     :root {
-      --color-gold: #b8882d;
-      --color-gold-hover: #d19c33;
-      --color-gold-light: #d4af37;
-      --color-dark: #111111;
-      --color-dark-hover: #222222;
-      --color-accent: #1f1f1f;
-      --color-accent-hover: #2a2a2a;
-      --color-text-light: #ffffff;
-      --color-text-dark: #000000;
-      --color-bg-dark: #000000;
-      --radius: 4px;
-      --transition: 0.2s all ease;
+      --gold: #b8882d;
+      --gold-hover: #d19c33;
+      --gold-light: #d4af37;
+      --surface: #111111;
+      --surface-hover: #222222;
+      --accent: #1f1f1f;
+      --accent-hover: #2a2a2a;
+      --fg: #ffffff;
+      --muted: rgba(255, 255, 255, 0.55);
+      --line: #262626;
+      --danger: #ff3b30;
+      --ok: #37d44f;
+      --radius: 5px;
+      --transition: 0.15s ease;
     }
 
     * {
@@ -28,176 +30,176 @@
     }
 
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, sans-serif;
-      width: 220px;
-      background-color: var(--color-bg-dark);
-      color: var(--color-text-light);
-      padding: 8px;
+      width: 260px;
+      padding: 10px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: var(--fg);
+      background: #000;
+    }
+
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      color: var(--gold);
+    }
+
+    .count {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .context {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 20px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .context .domain {
+      max-width: 190px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--fg);
+      font-weight: 600;
     }
 
     .container {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      width: 100%;
     }
 
     .btn {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: var(--radius);
-      font-weight: 500;
-      font-size: 13px;
-      color: var(--color-text-light);
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-      text-align: left;
+      gap: 9px;
       width: 100%;
-      white-space: nowrap;
-      position: relative;
-      overflow: hidden;
+      padding: 8px 10px;
+      border: none;
+      border-radius: var(--radius);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--fg);
+      text-align: left;
+      cursor: pointer;
+      background: var(--accent);
+      transition: background-color var(--transition), transform var(--transition), opacity var(--transition);
     }
 
-    .btn::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 3px;
-      background-color: currentColor;
-      opacity: 0;
-      transition: var(--transition);
+    .btn:hover:not(:disabled) {
+      background: var(--accent-hover);
     }
 
-    .btn:hover::before {
-      opacity: 1;
+    .btn:active:not(:disabled) {
+      transform: scale(0.985);
     }
 
-    .btn:focus {
-      outline: 2px solid var(--color-gold);
+    .btn:focus-visible {
+      outline: 2px solid var(--gold);
       outline-offset: 1px;
     }
 
-    .btn:active {
-      transform: scale(0.98);
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
     }
 
-    .btn-close {
-      background-color: var(--color-dark);
-    }
-
-    .btn-close:hover {
-      background-color: var(--color-dark-hover);
-    }
-
-    .btn-close::before {
-      background-color: #ff3b30;
-    }
-
-    .btn-gather {
-      background-color: var(--color-accent);
-    }
-
-    .btn-gather:hover {
-      background-color: var(--color-accent-hover);
-    }
-
-    .btn-gather::before {
-      background-color: var(--color-gold-light);
-    }
-
-    .btn-gather-all {
-      background-color: var(--color-gold);
-      color: var(--color-text-dark);
-    }
-
-    .btn-gather-all:hover {
-      background-color: var(--color-gold-hover);
-    }
-
-    .btn-gather-all::before {
-      background-color: #37d44f;
-    }
-
-    .btn-move {
-      background-color: var(--color-accent);
-    }
-
-    .btn-move:hover {
-      background-color: var(--color-accent-hover);
-    }
-
-    .btn-move::before {
-      background-color: #007aff;
-    }
-
-    .icon {
+    .btn .icon {
       display: inline-flex;
-      width: 14px;
-      height: 14px;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      flex-shrink: 0;
+      flex: 0 0 15px;
+      height: 15px;
+      color: var(--gold-light);
+    }
+
+    .btn .icon svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .btn .label {
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .shortcut {
-      margin-left: auto;
-      font-size: 10px;
-      opacity: 0.7;
-      padding: 2px 4px;
-      background-color: rgba(0, 0, 0, 0.2);
+      flex: 0 0 auto;
+      padding: 1px 5px;
+      font-size: 9.5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
       border-radius: 3px;
-      flex-shrink: 0;
     }
 
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-      border-bottom: 1px solid var(--color-accent);
-      padding-bottom: 4px;
+    .shortcut:empty {
+      display: none;
     }
 
-    .logo {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--color-gold);
-      letter-spacing: 0.5px;
+    .btn-close {
+      background: var(--surface);
+    }
+
+    .btn-close:hover:not(:disabled) {
+      background: var(--surface-hover);
+    }
+
+    .btn-close .icon {
+      color: var(--danger);
+    }
+
+    .btn-gather-all {
+      background: var(--gold);
+      color: #000;
+    }
+
+    .btn-gather-all:hover:not(:disabled) {
+      background: var(--gold-hover);
+    }
+
+    .btn-gather-all .icon,
+    .btn-gather-all .shortcut {
+      color: #000;
+    }
+
+    .btn-gather-all .shortcut {
+      background: rgba(0, 0, 0, 0.12);
+      border-color: rgba(0, 0, 0, 0.2);
     }
 
     .section-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      opacity: 0.5;
-      margin: 8px 0 4px 0;
+      margin: 8px 0 2px;
       padding-top: 8px;
-      border-top: 1px solid var(--color-accent);
-    }
-
-    .footer {
-      margin-top: 6px;
-      font-size: 9px;
-      text-align: center;
-      padding-top: 4px;
-      border-top: 1px solid var(--color-accent);
-    }
-
-    .footer a {
-      color: var(--color-gold);
-      text-decoration: none;
-      opacity: 0.8;
-      transition: var(--transition);
-    }
-
-    .footer a:hover {
-      opacity: 1;
-      text-decoration: underline;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
     }
 
     .move-row {
@@ -206,60 +208,161 @@
     }
 
     .move-row .btn {
-      flex: 1;
       justify-content: center;
-      padding: 8px 4px;
+      padding: 8px 0;
     }
 
     .move-row .btn .icon {
-      margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .undo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .btn-undo {
+      justify-content: flex-start;
+      background: transparent;
+      border: 1px dashed var(--line);
+      color: var(--gold-light);
+    }
+
+    .btn-undo:hover:not(:disabled) {
+      background: var(--accent);
+    }
+
+    .btn-undo .icon {
+      color: var(--gold-light);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 6px;
+      font-size: 10.5px;
+      border-top: 1px solid var(--line);
+    }
+
+    .footer a {
+      color: var(--gold);
+      text-decoration: none;
+      opacity: 0.85;
+    }
+
+    .footer a:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    .footer a:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    .status {
+      min-height: 15px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .status[data-tone='error'] {
+      color: var(--danger);
+    }
+
+    .status[data-tone='ok'] {
+      color: var(--ok);
+    }
+
+    [hidden] {
+      display: none !important;
     }
   </style>
 
-  <script src="popup.js" defer></script>
+  <script type="module" src="popup.js"></script>
 </head>
 <body>
   <div class="header">
     <span class="logo">tabmgmt</span>
+    <span class="count" id="window-count"></span>
+  </div>
+
+  <div class="context" id="context">
+    <span class="domain" id="domain">—</span>
+    <span id="sibling-count"></span>
   </div>
 
   <div class="container">
-    <button id="close-tabs" class="btn btn-close">
-      <span class="icon">X</span>
-      <span>Close Domain Tabs</span>
+    <button id="close-tabs" class="btn btn-close" type="button">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </span>
+      <span class="label" id="close-label">Close Domain Tabs</span>
+      <kbd class="shortcut" data-shortcut="close-tabs"></kbd>
     </button>
 
-    <button id="gather-tabs" class="btn btn-gather">
-      <span class="icon">~</span>
-      <span>Gather Around</span>
+    <button id="gather-tabs" class="btn" type="button">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 9h12M4 15h12"/><path d="M19 6v12"/></svg>
+      </span>
+      <span class="label">Gather Around</span>
+      <kbd class="shortcut" data-shortcut="gather-tabs"></kbd>
     </button>
 
-    <button id="gather-tabs-all" class="btn btn-gather-all">
-      <span class="icon">+</span>
-      <span>Gather All Domains</span>
+    <button id="gather-tabs-all" class="btn btn-gather-all" type="button">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </span>
+      <span class="label">Gather All Domains</span>
+      <kbd class="shortcut" data-shortcut="gather-tabs-all"></kbd>
     </button>
 
     <div class="section-label">Move Tab</div>
 
     <div class="move-row">
-      <button id="move-tab-start" class="btn btn-move" title="Move to start">
-        <span class="icon">|&lt;</span>
+      <button id="move-tab-start" class="btn" type="button" title="Move to start" aria-label="Move tab to start">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 4v16"/><path d="M19 12H9M13 8l-4 4 4 4"/></svg>
+        </span>
       </button>
-      <button id="move-tab-left" class="btn btn-move" title="Move left">
-        <span class="icon">&lt;</span>
+      <button id="move-tab-left" class="btn" type="button" title="Move left" aria-label="Move tab left">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M19 12H6M10 8l-4 4 4 4"/></svg>
+        </span>
       </button>
-      <button id="move-tab-right" class="btn btn-move" title="Move right">
-        <span class="icon">&gt;</span>
+      <button id="move-tab-right" class="btn" type="button" title="Move right" aria-label="Move tab right">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 12h13M14 8l4 4-4 4"/></svg>
+        </span>
       </button>
-      <button id="move-tab-end" class="btn btn-move" title="Move to end">
-        <span class="icon">&gt;|</span>
+      <button id="move-tab-end" class="btn" type="button" title="Move to end" aria-label="Move tab to end">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M19 4v16"/><path d="M5 12h10M9 8l4 4-4 4"/></svg>
+        </span>
+      </button>
+    </div>
+
+    <div class="undo-row" id="undo-row" hidden>
+      <button id="undo-close" class="btn btn-undo" type="button">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
+        </span>
+        <span class="label" id="undo-label">Undo close</span>
       </button>
     </div>
   </div>
 
-  <div class="footer">
-    <a href="#" id="open-shortcuts" title="Open keyboard shortcuts settings">Configure shortcuts</a>
-  </div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
 
+  <div class="footer">
+    <a href="#" id="open-shortcuts" title="Open keyboard shortcut settings">Configure shortcuts</a>
+  </div>
 </body>
 </html>
