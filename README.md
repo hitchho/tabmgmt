@@ -4,7 +4,7 @@ Chrome extension for managing tabs — close/gather same-domain tabs and move ta
 
 ## Features
 
-- Close all tabs matching the active tab's domain (with one-click **undo**)
+- Close all tabs matching the active tab's domain (with one-click **undo**); pinned and audible tabs are kept
 - Gather same-domain tabs around the active tab
 - Gather all tabs by domain across the window
 - Move tabs left/right, to the start, or to the end

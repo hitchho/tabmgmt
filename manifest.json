@@ -2,7 +2,7 @@
   "name": "tabmgmt",
   "short_name": "tabmgmt",
   "description": "Close/gather same-domain tabs and move tabs with keyboard shortcuts.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "manifest_version": 3,
   "permissions": [
     "tabs",

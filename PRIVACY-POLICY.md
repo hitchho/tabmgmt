@@ -49,7 +49,7 @@ The Extension does not utilize any third-party services or APIs that would colle
 
 The Extension is open-source software. The complete source code is available for inspection at our GitHub repository, allowing you to verify our privacy practices:
 
-https://github.com/hitchhooker/same-domain-tabs
+https://github.com/hitchho/tabmgmt
 
 ## Changes to This Privacy Policy
 

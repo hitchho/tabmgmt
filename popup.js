@@ -52,13 +52,6 @@ async function sendCommand(cmd) {
   }
 }
 
-/** Show one-line result, then dismiss the popup. */
-function flash(message, tone = 'ok') {
-  setStatus(message, tone);
-  if (tone === 'error') return;
-  setTimeout(() => window.close(), 450);
-}
-
 async function applyShortcutBadges() {
   let commands = [];
   try {
@@ -78,7 +71,7 @@ async function refreshContext() {
   const domain = urlDomain(active?.url);
 
   sameDomainCount = domain
-    ? tabs.filter((tab) => !tab.active && urlDomain(tab.url) === domain).length
+    ? tabs.filter((tab) => !tab.active && !tab.pinned && !tab.audible && urlDomain(tab.url) === domain).length
     : 0;
 
   el['window-count'].textContent = `${tabs.length} tab${tabs.length === 1 ? '' : 's'}`;
@@ -109,45 +102,32 @@ async function refreshUndo() {
     : 'Undo close';
 }
 
+const MOVE_COMMANDS = new Set(['move-tab-left', 'move-tab-right', 'move-tab-start', 'move-tab-end']);
+
 /**
- * Run a command, report the outcome, refresh state.
+ * Run a command. Moves stay silent and keep the popup open so they can be
+ * clicked repeatedly (the service worker queues them). Everything else closes
+ * the popup on success. Only errors are shown.
  *
  * @param {string} cmd
  */
 async function runCommand(cmd) {
-  if (busy) return;
-  busy = true;
-  setStatus('Working…');
+  const isMove = MOVE_COMMANDS.has(cmd);
+  if (!isMove) {
+    if (busy) return;
+    busy = true;
+  }
 
   const result = await sendCommand(cmd);
-  busy = false;
+  if (!isMove) busy = false;
 
   if (!result.ok) {
     setStatus(`Failed: ${result.error ?? 'unknown error'}`, 'error');
     await refreshUndo();
     return;
   }
-
-  switch (cmd) {
-    case 'close-tabs': {
-      const closed = Number(result.closed ?? 0);
-      await refreshUndo();
-      flash(closed ? `Closed ${closed} tab${closed === 1 ? '' : 's'}` : 'Nothing to close');
-      break;
-    }
-    case 'undo-close': {
-      const restored = Number(result.restored ?? 0);
-      await Promise.all([refreshContext(), refreshUndo()]);
-      flash(restored ? `Restored ${restored} tab${restored === 1 ? '' : 's'}` : 'Nothing to restore');
-      break;
-    }
-    case 'gather-tabs':
-    case 'gather-tabs-all':
-      flash('Tabs gathered');
-      break;
-    default:
-      flash('Done');
-  }
+  if (isMove) return;
+  window.close();
 }
 
 function openShortcuts(event) {

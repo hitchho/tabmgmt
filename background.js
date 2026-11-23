@@ -16,7 +16,6 @@ import {
 } from './domains.js';
 
 const UNDO_KEY = 'lastClosed';
-const MAX_UNDO = 25;
 
 /** @returns {Promise<chrome.tabs.Tab[]>} every tab in the current window */
 function currentWindowTabs() {
@@ -48,7 +47,7 @@ function activeTab(tabs) {
 }
 
 /**
- * Close every non-active tab sharing the active tab's domain.
+ * Close every non-active, non-pinned, non-audible tab sharing the active tab's domain.
  *
  * @returns {Promise<{closed: number, domain: string|null, reason?: string}>}
  */
@@ -58,7 +57,10 @@ async function closeDomainTabs() {
   const domain = tabDomain(active);
   if (!active || !domain) return { closed: 0, domain: null, reason: 'unsupported-url' };
 
-  const victims = tabs.filter((tab) => !tab.active && tabDomain(tab) === domain);
+  // Pinned and audible tabs are deliberately kept.
+  const victims = tabs.filter(
+    (tab) => !tab.active && !tab.pinned && !tab.audible && tabDomain(tab) === domain,
+  );
   if (victims.length === 0) return { closed: 0, domain };
 
   await rememberClosed(victims);
@@ -105,7 +107,6 @@ async function moveTabs(direction) {
 async function rememberClosed(tabs) {
   const records = tabs
     .filter((tab) => tabDomain(tab)) // non-web URLs cannot be recreated
-    .slice(0, MAX_UNDO)
     .map((tab) => ({
       url: tab.url,
       pinned: Boolean(tab.pinned),
@@ -159,10 +160,23 @@ const DOMAIN_COMMANDS = {
 };
 
 /**
+ * Commands run one at a time: overlapping runs (a held-down shortcut) would
+ * compute moves from stale tab indices and scramble the order.
+ */
+let queue = Promise.resolve();
+
+/** @param {string} cmd */
+function handleCommand(cmd) {
+  const run = queue.then(() => runCommand(cmd));
+  queue = run.catch(() => {});
+  return run;
+}
+
+/**
  * @param {string} cmd
  * @returns {Promise<{ok: boolean, [key: string]: unknown}>}
  */
-async function handleCommand(cmd) {
+async function runCommand(cmd) {
   try {
     if (Object.hasOwn(MOVE_COMMANDS, cmd)) {
       await moveTabs(MOVE_COMMANDS[cmd]);
