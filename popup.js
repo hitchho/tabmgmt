@@ -1,8 +1,8 @@
 /**
  * Popup controller.
  *
- * Renders live context (domain + sibling count), wires buttons to the service
- * worker, surfaces shortcut bindings, and offers undo after a close.
+ * Renders version + live context (domain + sibling count), wires buttons to the
+ * service worker, shows shortcut bindings as tooltips, and offers undo.
  */
 
 import { urlDomain } from './domains.js';
@@ -22,14 +22,15 @@ function $(id) {
 
 function cacheElements() {
   for (const id of [
-    'window-count',
-    'domain',
-    'sibling-count',
     'close-label',
     'status',
     'undo-row',
     'undo-label',
     'open-shortcuts',
+    'version',
+    'window-count',
+    'domain',
+    'sibling-count',
   ]) {
     el[id] = $(id);
   }
@@ -52,16 +53,30 @@ async function sendCommand(cmd) {
   }
 }
 
-async function applyShortcutBadges() {
+/** Show each command's binding as a hover tooltip instead of a badge. */
+async function applyShortcutTooltips() {
   let commands = [];
   try {
     commands = await chrome.commands.getAll();
   } catch {
     return;
   }
-  for (const command of commands) {
-    const badge = document.querySelector(`[data-shortcut="${command.name}"]`);
-    if (badge && command.shortcut) badge.textContent = command.shortcut;
+  for (const { name, shortcut } of commands) {
+    const button = $(name);
+    if (!button || !shortcut) continue;
+    const base = button.title || button.textContent.trim();
+    button.title = `${base} (${shortcut})`;
+  }
+}
+
+/** Scroll the domain back and forth when it is wider than the readout. */
+function rollIfOverflowing() {
+  const box = $('domain-box');
+  const overflow = el.domain.scrollWidth - box.clientWidth;
+  box.classList.toggle('roll', overflow > 0);
+  if (overflow > 0) {
+    box.style.setProperty('--roll-by', `-${overflow}px`);
+    box.style.setProperty('--roll-time', `${Math.max(3, overflow / 15)}s`);
   }
 }
 
@@ -74,16 +89,15 @@ async function refreshContext() {
     ? tabs.filter((tab) => !tab.active && !tab.pinned && !tab.audible && urlDomain(tab.url) === domain).length
     : 0;
 
-  el['window-count'].textContent = `${tabs.length} tab${tabs.length === 1 ? '' : 's'}`;
-  el.domain.textContent = domain ?? 'no web domain';
-  el['sibling-count'].textContent = domain
-    ? `· ${sameDomainCount} sibling${sameDomainCount === 1 ? '' : 's'}`
-    : '';
+  el['window-count'].textContent = `${tabs.length} tabs`;
+  el.domain.textContent = domain ?? '— no web domain —';
+  rollIfOverflowing();
+  el['sibling-count'].textContent = domain ? `${sameDomainCount} same` : '';
 
   const closeButton = $('close-tabs');
   const closeLabel = sameDomainCount === 0
-    ? 'No sibling tabs'
-    : `Close ${sameDomainCount} tab${sameDomainCount === 1 ? '' : 's'}`;
+    ? 'Close Domain Tabs'
+    : `Close ${sameDomainCount} Tab${sameDomainCount === 1 ? '' : 's'}`;
   el['close-label'].textContent = closeLabel;
   closeButton.disabled = sameDomainCount === 0 || !domain;
 }
@@ -98,8 +112,8 @@ async function refreshUndo() {
   undoCount = Array.isArray(records) ? records.length : 0;
   el['undo-row'].hidden = undoCount === 0;
   el['undo-label'].textContent = undoCount
-    ? `Undo close (${undoCount} tab${undoCount === 1 ? '' : 's'})`
-    : 'Undo close';
+    ? `Undo (${undoCount})`
+    : 'Undo';
 }
 
 const MOVE_COMMANDS = new Set(['move-tab-left', 'move-tab-right', 'move-tab-start', 'move-tab-end']);
@@ -156,7 +170,9 @@ function initPopup() {
   document.addEventListener('keydown', handleKeydown);
   el['open-shortcuts'].addEventListener('click', openShortcuts);
 
-  Promise.all([refreshContext(), refreshUndo(), applyShortcutBadges()]).catch((err) => {
+  el.version.textContent = `v${chrome.runtime.getManifest().version}`;
+
+  Promise.all([refreshContext(), refreshUndo(), applyShortcutTooltips()]).catch((err) => {
     setStatus(`Init failed: ${err?.message ?? err}`, 'error');
   });
 }
